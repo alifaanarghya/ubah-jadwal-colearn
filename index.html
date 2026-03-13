@@ -572,7 +572,7 @@
     <div class="page-header">
       <div class="page-badge">📅 Perubahan Jadwal</div>
       <h1 class="page-title">Ajukan Perubahan<br>Jadwal Belajarmu</h1>
-      <p class="page-desc">Permintaan perpindahan jadwal bersifat permanen. Isi formulir di bawah dengan lengkap.</p>
+      <p class="page-desc">Isi formulir di bawah dengan lengkap. Tim Kakak Siaga akan memproses permohonanmu secepatnya.</p>
     </div>
 
     <!-- CARD 1: Data Diri -->
@@ -649,7 +649,7 @@
 <div id="page-success">
   <div class="success-icon">🎉</div>
   <h2 class="success-title">Perubahan jadwalmu<br>sudah diterima!</h2>
-  <p class="success-desc">Mohon tunggu konfirmasi dari <strong>Kakak Siaga</strong>. Proses akan dilakukan pada jam operasional.</p>
+  <p class="success-desc">Mohon tunggu konfirmasi dari <strong>Kakak Siaga</strong>. Biasanya proses ini memakan waktu 1×24 jam pada hari kerja.</p>
 
   <div class="summary-box" id="summaryBox"></div>
 
@@ -673,7 +673,7 @@
 
 
   // GANTI dengan nomor WhatsApp Kakak Siaga
-  const WA_NUMBER = '6281119954075'; // TODO: ganti dengan nomor asli
+  const WA_NUMBER = '6281234567890'; // TODO: ganti dengan nomor asli
 
   // ===================== STATE =====================
   let selectedKelas = null;
@@ -944,6 +944,12 @@
       }
     });
 
+    // Kirim data ke Google Sheets (fire and forget)
+    fetch(APPS_SCRIPT_POST_URL, {
+      method: 'POST',
+      body: JSON.stringify({ nama, hp, kelas: selectedKelas, jadwalBaru, alasan }),
+    }).catch(err => console.warn('Gagal simpan ke sheets:', err));
+
     showSuccess({ nama, hp, kelas: selectedKelas, mapel: selectedMapel, jadwalBaru, alasan });
   }
 
@@ -965,8 +971,15 @@
 
     // WA Link
     const jadwalText = mapel.map(m => `- ${m}: ${jadwalBaru[m]}`).join('%0A');
-    const pesan = `Halo Kakak Siaga CoLearn! 👋%0A%0ASaya ingin mengajukan perubahan jadwal:%0A%0ANama: ${nama}%0AKelas: ${kelas}%0ANomor HP: +62${hp}%0A%0APerubahan jadwal:%0A${jadwalText}%0A%0AAlasan: ${alasan}%0A%0ADitunggu konfirmasinya. Terima kasih! 🙏`;
+    const pesan = `Halo Kakak Siaga CoLearn! 👋%0A%0ASaya ingin mengajukan perubahan jadwal:%0A%0ANama: ${nama}%0AKelas: ${kelas}%0ANomor HP: +62${hp}%0A%0APerubahan jadwal:%0A${jadwalText}%0A%0AAlasan: ${alasan}%0A%0ATerima kasih! 🙏`;
     document.getElementById('waBtn').href = `https://wa.me/${WA_NUMBER}?text=${pesan}`;
+
+    // Kirim data ke spreadsheet
+    fetch(SUBMIT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ nama, hp, kelas, jadwalBaru, alasan }),
+      headers: { 'Content-Type': 'application/json' }
+    }).catch(err => console.error('Gagal simpan ke sheet:', err));
 
     // Switch page
     document.getElementById('page-form').style.display = 'none';
@@ -994,6 +1007,8 @@
   // Data jadwal dimuat dari Google Sheets saat halaman dibuka
   let JADWAL_BARU = {};
   const APPS_SCRIPT_URL = '/api/jadwal';
+  const APPS_SCRIPT_POST_URL = 'https://script.google.com/macros/s/AKfycbzkjL5zqCQPUotl_vXVupZRGy3RIIScoGa9evcy7Qdl2srmArGeWFqYD3jseOsHKCSqlQ/exec';
+  const SUBMIT_URL = '/api/submit';
 
   // Mapping subject name dari spreadsheet ke label di form
   const SUBJECT_LABEL_MAP = {
