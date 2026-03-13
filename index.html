@@ -965,7 +965,7 @@
 
     // WA Link
     const jadwalText = mapel.map(m => `- ${m}: ${jadwalBaru[m]}`).join('%0A');
-    const pesan = `Halo Kakak Siaga CoLearn! 👋%0A%0ASaya ingin mengajukan perubahan jadwal:%0A%0ANama: ${nama}%0AKelas: ${kelas}%0ANomor HP: +62${hp}%0A%0APerubahan jadwal:%0A${jadwalText}%0A%0AAlasan: ${alasan}%0A%0ATerima kasih! 🙏`;
+    const pesan = `Halo Kakak Siaga CoLearn! 👋%0A%0ASaya ingin mengajukan perubahan jadwal:%0A%0ANama: ${nama}%0AKelas: ${kelas}%0ANomor HP: +62${hp}%0A%0APerubahan jadwal:%0A${jadwalText}%0A%0AAlasan: ${alasan}%0A%0ADitunggu konfirmasinya. Terima kasih! 🙏`;
     document.getElementById('waBtn').href = `https://wa.me/${WA_NUMBER}?text=${pesan}`;
 
     // Switch page
