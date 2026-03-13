@@ -572,7 +572,7 @@
     <div class="page-header">
       <div class="page-badge">📅 Perubahan Jadwal</div>
       <h1 class="page-title">Ajukan Perubahan<br>Jadwal Belajarmu</h1>
-      <p class="page-desc">Isi formulir di bawah dengan lengkap. Tim Kakak Siaga akan memproses permohonanmu secepatnya.</p>
+      <p class="page-desc">Permintaan perpindahan jadwal bersifat permanen. Isi formulir di bawah dengan lengkap.</p>
     </div>
 
     <!-- CARD 1: Data Diri -->
@@ -649,7 +649,7 @@
 <div id="page-success">
   <div class="success-icon">🎉</div>
   <h2 class="success-title">Perubahan jadwalmu<br>sudah diterima!</h2>
-  <p class="success-desc">Mohon tunggu konfirmasi dari <strong>Kakak Siaga</strong>. Biasanya proses ini memakan waktu 1×24 jam pada hari kerja.</p>
+  <p class="success-desc">Mohon tunggu konfirmasi dari <strong>Kakak Siaga</strong>. Proses ini akan dilakukan pada jam operasional.</p>
 
   <div class="summary-box" id="summaryBox"></div>
 
@@ -673,7 +673,7 @@
 
 
   // GANTI dengan nomor WhatsApp Kakak Siaga
-  const WA_NUMBER = '6281234567890'; // TODO: ganti dengan nomor asli
+  const WA_NUMBER = '6281119954075'; // TODO: ganti dengan nomor asli
 
   // ===================== STATE =====================
   let selectedKelas = null;
@@ -971,7 +971,7 @@
 
     // WA Link
     const jadwalText = mapel.map(m => `- ${m}: ${jadwalBaru[m]}`).join('%0A');
-    const pesan = `Halo Kakak Siaga CoLearn! 👋%0A%0ASaya ingin mengajukan perubahan jadwal:%0A%0ANama: ${nama}%0AKelas: ${kelas}%0ANomor HP: +62${hp}%0A%0APerubahan jadwal:%0A${jadwalText}%0A%0AAlasan: ${alasan}%0A%0ATerima kasih! 🙏`;
+    const pesan = `Halo Kakak Siaga CoLearn! 👋%0A%0ASaya ingin mengajukan perubahan jadwal:%0A%0ANama: ${nama}%0AKelas: ${kelas}%0ANomor HP: +62${hp}%0A%0APerubahan jadwal:%0A${jadwalText}%0A%0AAlasan: ${alasan}%0A%0ADitunggu konfirmasinya. Terima kasih! 🙏`;
     document.getElementById('waBtn').href = `https://wa.me/${WA_NUMBER}?text=${pesan}`;
 
     // Kirim data ke spreadsheet
