@@ -656,7 +656,7 @@
 
 
   // GANTI dengan nomor WhatsApp Kakak Siaga
-  const WA_NUMBER = '6281119954075'; // TODO: ganti dengan nomor asli
+  const WA_NUMBER = '6281234567890'; // TODO: ganti dengan nomor asli
 
   // ===================== STATE =====================
   let selectedKelas = null;
@@ -975,7 +975,20 @@
 
         JADWAL_BARU[grade][subjectKey].push({
           slot: slotName,
-          label: `${days}, ${time} WIB — ${teacher} (sisa kursi: ${sisa})`
+          label: `${days}, ${time} WIB — ${teacher} (sisa kursi: ${sisa})`,
+          firstDay: days.split(',')[0].trim()
+        });
+      });
+
+      // Sort semua slot per hari (Senin → Selasa → Rabu → Kamis → Jumat → Sabtu)
+      const DAY_ORDER = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      Object.values(JADWAL_BARU).forEach(subjects => {
+        Object.keys(subjects).forEach(subj => {
+          subjects[subj].sort((a, b) => {
+            const ai = DAY_ORDER.findIndex(d => a.firstDay.includes(d));
+            const bi = DAY_ORDER.findIndex(d => b.firstDay.includes(d));
+            return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+          });
         });
       });
 
