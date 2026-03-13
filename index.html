@@ -927,7 +927,7 @@
 
   // Data jadwal dimuat dari Google Sheets saat halaman dibuka
   let JADWAL_BARU = {};
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkjL5zqCQPUotl_vXVupZRGy3RIIScoGa9evcy7Qdl2srmArGeWFqYD3jseOsHKCSqlQ/exec';
+  const APPS_SCRIPT_URL = '/api/jadwal';
 
   // Mapping subject name dari spreadsheet ke label di form
   const SUBJECT_LABEL_MAP = {
@@ -1012,16 +1012,19 @@
       }
     };
 
-    // Inject JSONP script tag
-    const script = document.createElement('script');
-    script.src = APPS_SCRIPT_URL + '?callback=__jadwalCallback';
-    script.onerror = () => {
-      clearTimeout(timeout);
-      if (loadingEl) loadingEl.style.display = 'none';
-      if (errorEl) errorEl.style.display = 'block';
-      console.error('Gagal load jadwal: script error');
-    };
-    document.head.appendChild(script);
+    // Fetch via Vercel proxy (no CORS issue)
+    fetch(APPS_SCRIPT_URL)
+      .then(res => res.json())
+      .then(rows => {
+        clearTimeout(timeout);
+        window.__jadwalCallback(rows);
+      })
+      .catch(err => {
+        clearTimeout(timeout);
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (errorEl) errorEl.style.display = 'block';
+        console.error('Gagal load jadwal:', err);
+      });
   }
 
 
