@@ -483,6 +483,21 @@
       font-family: 'DM Sans', sans-serif;
     }
 
+    /* BENTROK WARNING */
+    .bentrok-warning {
+      display: none;
+      background: #FEF2F2;
+      border: 1.5px solid #FECACA;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-top: 12px;
+      color: #DC2626;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .bentrok-warning.show { display: block; }
+
     /* LOADING OVERLAY */
     #jadwalLoadingOverlay {
       display: flex;
@@ -613,6 +628,7 @@
       <div class="card-title">Pilih Jadwal Baru</div>
       <div id="jadwalBaruContainer"></div>
       <div class="error-msg" id="err-jadwal-baru" style="display:none;margin-top:10px">Pilih jadwal baru untuk setiap mata pelajaran yang dipilih.</div>
+      <div class="bentrok-warning" id="bentrokWarning">⚠️ <span id="bentrokMsg"></span></div>
     </div>
 
     <!-- CARD 4: Alasan -->
@@ -633,7 +649,7 @@
 <div id="page-success">
   <div class="success-icon">🎉</div>
   <h2 class="success-title">Perubahan jadwalmu<br>sudah diterima!</h2>
-  <p class="success-desc">Mohon tunggu konfirmasi dari <strong>Kakak Siaga</strong>. Permintaanmu akan diproses pada jam operasional.</p>
+  <p class="success-desc">Mohon tunggu konfirmasi dari <strong>Kakak Siaga</strong>. Biasanya proses ini memakan waktu 1×24 jam pada hari kerja.</p>
 
   <div class="summary-box" id="summaryBox"></div>
 
@@ -657,7 +673,7 @@
 
 
   // GANTI dengan nomor WhatsApp Kakak Siaga
-  const WA_NUMBER = '6281119954075'; // TODO: ganti dengan nomor asli
+  const WA_NUMBER = '6281234567890'; // TODO: ganti dengan nomor asli
 
   // ===================== STATE =====================
   let selectedKelas = null;
@@ -773,6 +789,52 @@
     renderJadwalBaru();
   }
 
+  // ===================== CEK BENTROK =====================
+  function cekBentrok() {
+    const warning = document.getElementById('bentrokWarning');
+    const msg = document.getElementById('bentrokMsg');
+    warning.classList.remove('show');
+
+    // Kumpulkan semua jadwal yang dipilih: { mapel, days, time }
+    const pilihan = [];
+    selectedMapel.forEach(mapel => {
+      const sel = document.getElementById('jadwal_' + mapel.replace(/\s+/g,'_'));
+      if (!sel || !sel.value) return;
+      // Cari slot data dari JADWAL_BARU
+      const slots = (JADWAL_BARU[selectedKelas] && JADWAL_BARU[selectedKelas][mapel]) || [];
+      const slot = slots.find(s => s.slot === sel.value);
+      if (!slot) return;
+      // Parse days dan time dari label: "Senin, 14:30-15:30 WIB — ..."
+      const labelParts = slot.label.match(/^(.+?),\s*(\d{2}:\d{2}-\d{2}:\d{2})/);
+      if (!labelParts) return;
+      const days = labelParts[1].trim();
+      const time = labelParts[2].trim();
+      pilihan.push({ mapel, days, time });
+    });
+
+    // Cek semua kombinasi pasangan
+    const bentrokList = [];
+    for (let i = 0; i < pilihan.length; i++) {
+      for (let j = i + 1; j < pilihan.length; j++) {
+        const a = pilihan[i], b = pilihan[j];
+        // Split days (bisa "Senin, Rabu" atau "Senin")
+        const daysA = a.days.split(',').map(d => d.trim());
+        const daysB = b.days.split(',').map(d => d.trim());
+        // Cek apakah ada hari yang sama DAN jam yang sama
+        const hariSama = daysA.some(d => daysB.includes(d));
+        const jamSama = a.time === b.time;
+        if (hariSama && jamSama) {
+          bentrokList.push(`${a.mapel} & ${b.mapel}`);
+        }
+      }
+    }
+
+    if (bentrokList.length > 0) {
+      msg.textContent = `Jadwal bentrok: ${bentrokList.join(', ')}. Silakan pilih jadwal yang berbeda hari atau jam.`;
+      warning.classList.add('show');
+    }
+  }
+
   // ===================== JADWAL BARU =====================
   function renderJadwalBaru() {
     const container = document.getElementById('jadwalBaruContainer');
@@ -793,7 +855,7 @@
 
       group.innerHTML = `
         <label>${mapel}</label>
-        <select id="jadwal_${mapel.replace(/\s+/g,'_')}" data-mapel="${mapel}">
+        <select id="jadwal_${mapel.replace(/\s+/g,'_')}" data-mapel="${mapel}" onchange="cekBentrok()">
           <option value="">-- Pilih jadwal baru --</option>
           ${optionsHtml}
         </select>
@@ -875,7 +937,11 @@
     const jadwalBaru = {};
     selectedMapel.forEach(mapel => {
       const sel = document.getElementById('jadwal_' + mapel.replace(/\s+/g,'_'));
-      if (sel) jadwalBaru[mapel] = sel.value;
+      if (sel) {
+        const slots = (JADWAL_BARU[selectedKelas] && JADWAL_BARU[selectedKelas][mapel]) || [];
+        const slot = slots.find(s => s.slot === sel.value);
+        jadwalBaru[mapel] = slot ? slot.label : sel.value;
+      }
     });
 
     showSuccess({ nama, hp, kelas: selectedKelas, mapel: selectedMapel, jadwalBaru, alasan });
