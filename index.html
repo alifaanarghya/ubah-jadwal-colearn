@@ -603,6 +603,7 @@
     <!-- CARD 2: Mata Pelajaran -->
     <div class="card" id="cardMapel" style="display:none">
       <div class="card-title">Mata Pelajaran yang Ingin Diubah</div>
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:14px;margin-top:-8px;">Pastikan pilih mapel sesuai paket yang dimiliki</p>
       <div class="mapel-list" id="mapelList"></div>
       <div class="error-msg" id="err-mapel" style="display:none;margin-top:10px">Pilih minimal satu mata pelajaran.</div>
     </div>
@@ -618,8 +619,8 @@
     <div class="card">
       <div class="card-title">Alasan Perubahan</div>
       <div class="form-group" style="margin-bottom:0">
-        <label for="alasan">Kenapa kamu ingin ubah jadwal? <span class="required">*</span></label>
-        <textarea id="alasan" placeholder="Ceritakan alasanmu di sini, misalnya: bentrok dengan kegiatan sekolah, jadwal belajar tidak sesuai, dll."></textarea>
+        <label for="alasan">Kenapa CoFriends ingin ubah jadwal? <span class="required">*</span></label>
+        <textarea id="alasan" placeholder="Ceritakan alasan CoFriends di sini, misalnya: bentrok dengan kegiatan sekolah, jadwal belajar tidak sesuai, dll."></textarea>
         <div class="error-msg" id="err-alasan">Alasan wajib diisi.</div>
       </div>
     </div>
@@ -941,67 +942,91 @@
   };
 
 
-  async function loadJadwal() {
+  function loadJadwal() {
     const loadingEl = document.getElementById('jadwalLoadingOverlay');
     const errorEl = document.getElementById('jadwalError');
-    try {
-      loadingEl.style.display = 'flex';
-      const res = await fetch(APPS_SCRIPT_URL);
-      if (!res.ok) throw new Error('Gagal fetch');
-      const rows = await res.json();
+    if (loadingEl) loadingEl.style.display = 'flex';
 
-      JADWAL_BARU = {};
-      rows.forEach(row => {
-        const grade = parseInt(row['course_grade']);
-        const subject = row['subject']?.trim();
-        const freq = row['frequency']?.trim();
-        const status = row['status']?.trim();
-        const sisa = parseInt(row['sisa_kursi']);
-        const slotName = row['slot_name']?.trim();
-        const days = row['days']?.trim();
-        const time = row['session_time']?.trim();
-        const teacher = row['teacher_name']?.trim();
+    const timeout = setTimeout(() => {
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (errorEl) errorEl.style.display = 'block';
+      console.error('Gagal load jadwal: timeout');
+    }, 10000);
 
-        if (!grade || !subject || status !== 'Available' || sisa <= 0) return;
-
-        // Determine label key (differentiate Matematika 1x vs 2x for grade 10 & 11)
-        let subjectKey = subject;
-        if ((grade === 10 || grade === 11) && subject === 'Matematika') {
-          subjectKey = freq === '2x' ? 'Matematika 2x/minggu' : 'Matematika 1x/minggu';
+    window.__jadwalCallback = function(rows) {
+      clearTimeout(timeout);
+      try {
+        const DAY_ORDER = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        function getTimeMinutes(label) {
+          const match = label.match(/(\d{2}):(\d{2})-/);
+          if (!match) return 999;
+          return parseInt(match[1]) * 60 + parseInt(match[2]);
         }
 
-        if (!JADWAL_BARU[grade]) JADWAL_BARU[grade] = {};
-        if (!JADWAL_BARU[grade][subjectKey]) JADWAL_BARU[grade][subjectKey] = [];
+        JADWAL_BARU = {};
+        rows.forEach(row => {
+          const grade = parseInt(row['course_grade']);
+          const subject = (row['subject'] || '').toString().trim();
+          const freq = (row['frequency'] || '').toString().trim();
+          const status = (row['status'] || '').toString().trim();
+          const sisa = parseInt(row['sisa_kursi']);
+          const slotName = (row['slot_name'] || '').toString().trim();
+          const days = (row['days'] || '').toString().trim();
+          const time = (row['session_time'] || '').toString().trim();
+          const teacher = (row['teacher_name'] || '').toString().trim();
 
-        JADWAL_BARU[grade][subjectKey].push({
-          slot: slotName,
-          label: `${days}, ${time} WIB — ${teacher} (sisa kursi: ${sisa})`,
-          firstDay: days.split(',')[0].trim()
-        });
-      });
+          if (!grade || !subject || status !== 'Available' || sisa <= 0) return;
 
-      // Sort semua slot per hari (Senin → Selasa → Rabu → Kamis → Jumat → Sabtu)
-      const DAY_ORDER = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-      Object.values(JADWAL_BARU).forEach(subjects => {
-        Object.keys(subjects).forEach(subj => {
-          subjects[subj].sort((a, b) => {
-            const ai = DAY_ORDER.findIndex(d => a.firstDay.includes(d));
-            const bi = DAY_ORDER.findIndex(d => b.firstDay.includes(d));
-            return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+          let subjectKey = subject;
+          if ((grade === 10 || grade === 11) && subject === 'Matematika') {
+            subjectKey = freq === '2x' ? 'Matematika 2x/minggu' : 'Matematika 1x/minggu';
+          }
+
+          if (!JADWAL_BARU[grade]) JADWAL_BARU[grade] = {};
+          if (!JADWAL_BARU[grade][subjectKey]) JADWAL_BARU[grade][subjectKey] = [];
+
+          JADWAL_BARU[grade][subjectKey].push({
+            slot: slotName,
+            label: `${days}, ${time} WIB — ${teacher} (sisa kursi: ${sisa})`,
+            firstDay: days.split(',')[0].trim()
           });
         });
-      });
 
-      loadingEl.style.display = 'none';
-    } catch(e) {
-      loadingEl.style.display = 'none';
-      errorEl.style.display = 'block';
-      console.error('Gagal load jadwal:', e);
-    }
+        // Sort by hari lalu by jam
+        Object.values(JADWAL_BARU).forEach(subjects => {
+          Object.keys(subjects).forEach(subj => {
+            subjects[subj].sort((a, b) => {
+              const ai = DAY_ORDER.findIndex(d => a.firstDay.includes(d));
+              const bi = DAY_ORDER.findIndex(d => b.firstDay.includes(d));
+              if (ai !== bi) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+              return getTimeMinutes(a.label) - getTimeMinutes(b.label);
+            });
+          });
+        });
+
+        if (loadingEl) loadingEl.style.display = 'none';
+      } catch(e) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (errorEl) errorEl.style.display = 'block';
+        console.error('Gagal proses jadwal:', e);
+      }
+    };
+
+    // Inject JSONP script tag
+    const script = document.createElement('script');
+    script.src = APPS_SCRIPT_URL + '?callback=__jadwalCallback';
+    script.onerror = () => {
+      clearTimeout(timeout);
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (errorEl) errorEl.style.display = 'block';
+      console.error('Gagal load jadwal: script error');
+    };
+    document.head.appendChild(script);
   }
 
-  // Load saat halaman dibuka
-  loadJadwal();
+
+  // Load saat DOM siap
+  document.addEventListener('DOMContentLoaded', loadJadwal);
 </script>
 </body>
 </html>
