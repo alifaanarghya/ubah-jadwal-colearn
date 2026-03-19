@@ -1,14 +1,27 @@
+// api/jadwal.js
+// Vercel serverless function: proxy ke Google Apps Script untuk ambil data jadwal
+// Menghindari CORS issue di browser
+
+const APPS_SCRIPT_URL =
+  'https://script.google.com/macros/s/AKfycbxLBdJio7KcqQlqA8O6YlxHcMRM-Na5oc71Sontwdx994fMHrWmRAqT3pAL3agjW1ETkw/exec';
+
 export default async function handler(req, res) {
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkjL5zqCQPUotl_vXVupZRGy3RIIScoGa9evcy7Qdl2srmArGeWFqYD3jseOsHKCSqlQ/exec';
-  
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   try {
     const response = await fetch(APPS_SCRIPT_URL, { redirect: 'follow' });
     const data = await response.json();
-    
-    res.setHeader('Access-Control-Allow-Origin', '*');
+
     res.setHeader('Content-Type', 'application/json');
-    res.status(200).json(data);
+    return res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Jadwal fetch error:', error);
+    return res.status(500).json({ error: error.message });
   }
 }
