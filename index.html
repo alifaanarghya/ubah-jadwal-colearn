@@ -412,27 +412,52 @@
 
     if (!valid) return;
 
+    // Bangun jadwalBaru dengan format { slot, label } sesuai Apps Script
     const jadwalBaru = {};
     selectedMapel.forEach(mapel => {
       const sel = document.getElementById('jadwal_' + mapel.replace(/\s+/g,'_'));
       if (sel) {
         const slots = (JADWAL_BARU[selectedKelas] && JADWAL_BARU[selectedKelas][mapel]) || [];
-        const slot = slots.find(s => s.slot === sel.value);
-        jadwalBaru[mapel] = slot ? slot.label : sel.value;
+        const found = slots.find(s => s.slot === sel.value);
+        jadwalBaru[mapel] = {
+          slot:  found ? found.slot  : sel.value,
+          label: found ? found.label : sel.value
+        };
       }
     });
 
-    fetch(APPS_SCRIPT_POST_URL, { method: 'POST', body: JSON.stringify({ nama, hp, kelas: selectedKelas, jadwalBaru, alasan: alasanFinal }) })
-      .catch(err => console.warn('Gagal simpan:', err));
+    // Timestamp WIB
+    const now = new Date();
+    const timestamp = now.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB';
+
+    // Kirim ke Apps Script (format sesuai doPost)
+    fetch(APPS_SCRIPT_POST_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'submit',
+        timestamp,
+        nama,
+        hp: '+62' + hp,
+        kelas: selectedKelas,
+        jadwalBaru,
+        alasan: alasanFinal
+      })
+    })
+    .then(res => res.json())
+    .then(data => console.log('Submit OK:', data))
+    .catch(err => console.warn('Gagal simpan ke Sheet/Slack:', err));
 
     showSuccess({ nama, hp, kelas: selectedKelas, mapel: selectedMapel, jadwalBaru, alasan: alasanFinal });
   }
 
   function showSuccess({ nama, hp, kelas, mapel, jadwalBaru, alasan }) {
     const box = document.getElementById('summaryBox');
-    const jadwalRows = mapel.map(m =>
-      `<div class="summary-row"><span class="summary-key">${m}</span><span class="summary-val">${jadwalBaru[m]}</span></div>`
-    ).join('');
+    const jadwalRows = mapel.map(m => {
+      const info = jadwalBaru[m];
+      const label = (info && info.label) ? info.label : (typeof info === 'string' ? info : '');
+      return `<div class="summary-row"><span class="summary-key">${m}</span><span class="summary-val">${label}</span></div>`;
+    }).join('');
     box.innerHTML = `
       <div class="summary-row"><span class="summary-key">Nama</span><span class="summary-val">${nama}</span></div>
       <div class="summary-row"><span class="summary-key">Kelas</span><span class="summary-val">${KELAS_LABEL[kelas] || kelas}</span></div>
@@ -440,7 +465,11 @@
       ${jadwalRows}
       <div class="summary-row"><span class="summary-key">Alasan</span><span class="summary-val" style="max-width:200px">${alasan}</span></div>
     `;
-    const jadwalText = mapel.map(m => `- ${m}: ${jadwalBaru[m]}`).join('%0A');
+    const jadwalText = mapel.map(m => {
+      const info = jadwalBaru[m];
+      const label = (info && info.label) ? info.label : (typeof info === 'string' ? info : '');
+      return `- ${m}: ${label}`;
+    }).join('%0A');
     const pesan = `Halo Kakak Siaga CoLearn! 👋%0A%0ASaya ingin mengajukan perubahan jadwal:%0A%0ANama: ${nama}%0AKelas: ${KELAS_LABEL[kelas]}%0ANomor HP: +62${hp}%0A%0APerubahan jadwal:%0A${jadwalText}%0A%0AAlasan: ${alasan}%0A%0ADitunggu konfirmasinya. Terima kasih! 🙏`;
     document.getElementById('waBtn').href = `https://wa.me/${WA_NUMBER}?text=${pesan}`;
     document.getElementById('page-form').style.display = 'none';
