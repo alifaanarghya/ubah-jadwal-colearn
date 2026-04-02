@@ -249,7 +249,7 @@
   let selectedMapel = [];
   let JADWAL_BARU = {};
   const APPS_SCRIPT_URL = '/api/jadwal';
-  const APPS_SCRIPT_POST_URL = 'https://script.google.com/macros/s/AKfycbxLBdJio7KcqQlqA8O6YlxHcMRM-Na5oc71Sontwdx994fMHrWmRAqT3pAL3agjW1ETkw/exec';
+  const APPS_SCRIPT_POST_URL = 'https://script.google.com/macros/s/AKfycbzkjL5zqCQPUotl_vXVupZRGy3RIIScoGa9evcy7Qdl2srmArGeWFqYD3jseOsHKCSqlQ/exec';
 
   const MAPEL_ORDER = {
     4: ['Matematika'], 5: ['Matematika'], 6: ['Matematika'],
@@ -431,7 +431,7 @@
     const timestamp = now.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB';
 
     // Kirim ke Apps Script (format sesuai doPost)
-    fetch(APPS_SCRIPT_POST_URL, {
+    fetch('/api/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
