@@ -1,3 +1,9 @@
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -14,21 +20,29 @@ export default async function handler(req, res) {
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLBdJio7KcqQlqA8O6YlxHcMRM-Na5oc71Sontwdx994fMHrWmRAqT3pAL3agjW1ETkw/exec';
 
   try {
-    const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    const rawBody = await new Promise((resolve, reject) => {
+      let data = '';
+      req.on('data', chunk => { data += chunk; });
+      req.on('end', () => resolve(data));
+      req.on('error', reject);
+    });
+
+    console.log('Raw body received:', rawBody.substring(0, 200));
 
     const response = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body,
+      body: rawBody,
       redirect: 'follow',
     });
 
     const text = await response.text();
+    console.log('Apps Script response:', text);
 
     let data;
     try {
       data = JSON.parse(text);
-    } catch {
+    } catch (e) {
       data = { raw: text };
     }
 
